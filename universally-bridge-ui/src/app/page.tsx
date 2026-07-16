@@ -1,52 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Lock, ArrowRightLeft, Wallet, Square, ChevronDown, Hash, Hammer, ImageIcon, Loader2, CheckCircle2, ExternalLink, Clock } from 'lucide-react';
+import { Lock, ArrowRightLeft, Wallet, Square, ChevronDown, Hammer, ImageIcon, Loader2, CheckCircle2, ExternalLink, Clock } from 'lucide-react';
 import { ethers } from 'ethers';
 import { Network, Alchemy } from "alchemy-sdk";
-
-const NFT_ABI = [
-  "function approve(address to, uint256 tokenId) external",
-  "function getApproved(uint256 tokenId) external view returns (address)",
-  "function mint(address to) external"
-];
-
-const BRIDGE_ABI = [
-  "function bridgeNFT(address _nftContract, uint256 _tokenId, uint256 _maxSubmissionCost, uint256 _gasLimit, uint256 _maxFeePerGas) external payable"
-];
-
-const SUPPORTED_CHAINS = [
-  { 
-    id: '11155111', 
-    hex: '0xaa36a7', 
-    name: 'Eth Sepolia', 
-    type: 'Ethereum', 
-    color: '#8892f1',
-    rpc: 'https://rpc.sepolia.org',
-    nftContract: "0xA83bf30c9D0828b297095d80851A2E3CF96ff1aD",
-    bridgeContract: "0x1b37fc128F504A974c31cb89eb56704782DeaB54"
-  },
-  { 
-    id: '84532', 
-    hex: '0x14a34', 
-    name: 'Base Sepolia', 
-    type: 'Ethereum', 
-    color: '#0052ff',
-    rpc: 'https://sepolia.base.org',
-    nftContract: "0x8cA202f8133953Cf994d1a60D9Ae863283d947AA", 
-    bridgeContract: "0x0d70379dA1b631D179B32eE9D80bb37AC4cc6005" 
-  },
-  { 
-    id: '80084', 
-    hex: '0x138d4', 
-    name: 'Berachain Test', 
-    type: 'Bear', 
-    color: '#ff8b8b',
-    rpc: 'https://artio.rpc.berachain.com',
-    nftContract: "",
-    bridgeContract: ""
-  }
-];
+import { NFT_ABI, BRIDGE_ABI, SUPPORTED_CHAINS, ALCHEMY_API_KEY } from '../constants/config';
 
 export default function UniversallyBridge() {
   const [account, setAccount] = useState<string | null>(null);
@@ -73,7 +31,7 @@ export default function UniversallyBridge() {
   };
 
   const alchemyConfig = {
-    apiKey: "ozz2M6FYJRXDEfJ-Huqx8",
+    apiKey: ALCHEMY_API_KEY,
     network: getAlchemyNetwork(selectedChain.id),
   };
   const alchemy = new Alchemy(alchemyConfig);
@@ -163,7 +121,7 @@ export default function UniversallyBridge() {
           }
         }
       } catch (error: any) {
-        if (error.code === 4001) alert("Connexion refusée : Vous avez annulé la demande ou fermé MetaMask.");
+        if (error.code === 4001) alert("Connexion refusée.");
         else console.error("Erreur de connexion", error);
       }
     } else {
@@ -186,7 +144,7 @@ export default function UniversallyBridge() {
       fetchUserNFTs(account);
     } catch (error: any) {
       console.error("Erreur Mint:", error);
-      alert("Transaction rejetée. Vérifiez que vous êtes le propriétaire (Owner) du contrat TestNFT.");
+      alert("Transaction rejetée.");
     } finally {
       setIsMinting(false);
     }
@@ -195,7 +153,7 @@ export default function UniversallyBridge() {
   const handleBridge = async () => {
     if (!account) return connectWallet();
     if (!tokenId) return alert("Veuillez sélectionner un Token ID à bridge.");
-    if (!selectedChain.bridgeContract || !selectedChain.nftContract) return alert(`Le pont (bridge) n'est pas encore déployé sur ce réseau.`);
+    if (!selectedChain.bridgeContract || !selectedChain.nftContract) return alert(`Le pont (bridge) n'est pas encore déployé.`);
     
     try {
       const provider = new ethers.BrowserProvider((window as any).ethereum);
@@ -205,18 +163,14 @@ export default function UniversallyBridge() {
       const bridgeContract = new ethers.Contract(selectedChain.bridgeContract, BRIDGE_ABI, signer);
 
       setStatus("approving");
-      console.log(`Demande d'approbation pour le NFT #${tokenId}...`);
       const txApprove = await nftContract.approve(selectedChain.bridgeContract, tokenId);
       await txApprove.wait();
-      console.log("✅ Approbation validée !");
 
       setStatus("bridging");
       const maxSubmissionCost = ethers.parseEther("0.005"); 
       const gasLimit = BigInt(300000); 
       const maxFeePerGas = ethers.parseUnits("0.1", "gwei"); 
       const totalValue = maxSubmissionCost + (gasLimit * maxFeePerGas);
-
-      console.log("Envoi de la transaction de bridge avec une valeur de :", ethers.formatEther(totalValue), "ETH");
 
       const txBridge = await bridgeContract.bridgeNFT(
         selectedChain.nftContract,
@@ -226,11 +180,10 @@ export default function UniversallyBridge() {
         maxFeePerGas,
         { 
           value: totalValue,
-          gasLimit: BigInt(500000) // FORÇAGE DE LA LIMITE DE GAZ POUR ÉVITER LE CALL_EXCEPTION DE L'ESTIMATION RPC
+          gasLimit: BigInt(500000)
         }
       );
       
-      console.log("Transaction envoyée, attente de confirmation...", txBridge.hash);
       const receipt = await txBridge.wait();
       setTxHash(receipt.hash);
       setStatus("success");
@@ -238,13 +191,10 @@ export default function UniversallyBridge() {
       setActiveTab(4);
       
     } catch (error: any) {
-      console.error("Erreur Bridge Détaillée:", error);
+      console.error("Erreur Bridge:", error);
       setStatus("idle");
-      if (error.code === 4001) {
-        alert("Transaction annulée par l'utilisateur.");
-      } else {
-        alert(`Échec du Bridge. Vérifiez la console (F12) pour voir les détails. Assurez-vous d'avoir assez d'ETH sur Base Sepolia.`);
-      }
+      if (error.code === 4001) alert("Transaction annulée par l'utilisateur.");
+      else alert(`Échec du Bridge. Vérifiez la console.`);
     }
   };
 
@@ -275,250 +225,223 @@ export default function UniversallyBridge() {
   };
 
   return (
-    <>
-      <style>
-        {`
-          @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
-          
-          html, body { margin: 0 !important; padding: 0 !important; width: 100%; min-height: 100vh; background-color: #244f34; }
-          .font-pixel { font-family: 'Press Start 2P', cursive !important; }
-          .pixel-title {
-            color: #8be0ef;
-            text-shadow: -2px -2px 0 #1b3a29, 2px -2px 0 #1b3a29, -2px 2px 0 #1b3a29, 2px 2px 0 #1b3a29, -3px 0 0 #1b3a29, 3px 0 0 #1b3a29, 0 -3px 0 #1b3a29, 0 3px 0 #1b3a29, 4px 4px 0 #1b3a29, 5px 5px 0 #1b3a29, 6px 6px 0 #1b3a29;
-          }
-          .bridge-container * { box-sizing: border-box; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-          .nft-scroll::-webkit-scrollbar { width: 6px; }
-          .nft-scroll::-webkit-scrollbar-track { background: #132a1d; }
-          .nft-scroll::-webkit-scrollbar-thumb { background: #5b7d68; border-radius: 4px; }
-          .nft-scroll::-webkit-scrollbar-thumb:hover { background: #6fd3ee; }
+    <div className="bridge-container relative flex flex-col items-center pt-16 pb-12 px-4 overflow-hidden" style={{ background: 'linear-gradient(180deg, #a2dbe5 0%, #244f34 100%)', width: '100%', minHeight: '100vh' }}>
+      <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.15) 1px, transparent 1px)`, backgroundSize: '40px 40px', backgroundPosition: 'center top' }} />
 
-          @keyframes pulse-status {
-            0% { opacity: 0.5; }
-            50% { opacity: 1; }
-            100% { opacity: 0.5; }
-          }
-          .status-pulse { animation: pulse-status 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
-        `}
-      </style>
+      <div className="z-10 flex flex-col items-center mb-8 text-center" style={{ marginTop: '2rem' }}>
+        <h1 className="font-pixel text-[2.5rem] md:text-[3.5rem] tracking-tight pixel-title" style={{ marginBottom: '0.75rem' }}>UNIVERSALLY</h1>
+        <h2 className="text-[11px] font-bold text-[#1b3a29] tracking-[0.2em] uppercase">NFT BRIDGE</h2>
+      </div>
 
-      <div className="bridge-container relative flex flex-col items-center pt-16 pb-12 px-4 overflow-hidden" style={{ background: 'linear-gradient(180deg, #a2dbe5 0%, #244f34 100%)', width: '100%', minHeight: '100vh' }}>
-        <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.15) 1px, transparent 1px)`, backgroundSize: '40px 40px', backgroundPosition: 'center top' }} />
-
-        <div className="z-10 flex flex-col items-center mb-8 text-center" style={{ marginTop: '2rem' }}>
-          <h1 className="font-pixel text-[2.5rem] md:text-[3.5rem] tracking-tight pixel-title" style={{ marginBottom: '0.75rem' }}>UNIVERSALLY</h1>
-          <h2 className="text-[11px] font-bold text-[#1b3a29] tracking-[0.2em] uppercase">NFT BRIDGE</h2>
+      <div className="z-10 w-full bg-[#132a1d] flex flex-col shadow-[0_24px_50px_rgba(15,35,25,0.6)]" style={{ maxWidth: '720px', border: '1px solid #1c3e2a', color: 'white' }}>
+        
+        <div className="flex justify-between items-center w-full" style={{ backgroundColor: '#173324', borderBottom: '1px solid #1c3e2a', padding: '8px 16px' }}>
+          <span style={{ fontSize: '10px', color: '#5b7d68', fontWeight: 'bold', letterSpacing: '0.1em' }}>BRIDGE.EXE</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            {account ? (
+               <span style={{ fontSize: '10px', color: '#6fd3ee', fontFamily: 'monospace', fontWeight: 'bold' }}>{account.slice(0, 6)}...{account.slice(-4)}</span>
+            ) : (
+              <button onClick={connectWallet} style={{ background: 'transparent', border: '1px solid #5b7d68', color: '#5b7d68', fontSize: '9px', fontWeight: 'bold', padding: '4px 8px', cursor: 'pointer', letterSpacing: '0.1em' }}>CONNECT</button>
+            )}
+            <Square size={12} color="#305441" />
+          </div>
         </div>
 
-        <div className="z-10 w-full bg-[#132a1d] flex flex-col shadow-[0_24px_50px_rgba(15,35,25,0.6)]" style={{ maxWidth: '720px', border: '1px solid #1c3e2a', color: 'white' }}>
-          
-          <div className="flex justify-between items-center w-full" style={{ backgroundColor: '#173324', borderBottom: '1px solid #1c3e2a', padding: '8px 16px' }}>
-            <span style={{ fontSize: '10px', color: '#5b7d68', fontWeight: 'bold', letterSpacing: '0.1em' }}>BRIDGE.EXE</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              {account ? (
-                 <span style={{ fontSize: '10px', color: '#6fd3ee', fontFamily: 'monospace', fontWeight: 'bold' }}>{account.slice(0, 6)}...{account.slice(-4)}</span>
-              ) : (
-                <button onClick={connectWallet} style={{ background: 'transparent', border: '1px solid #5b7d68', color: '#5b7d68', fontSize: '9px', fontWeight: 'bold', padding: '4px 8px', cursor: 'pointer', letterSpacing: '0.1em' }}>CONNECT</button>
-              )}
-              <Square size={12} color="#305441" />
-            </div>
+        <div className="flex flex-row w-full" style={{ backgroundColor: '#132a1d', borderBottom: '1px solid #1c3e2a' }}>
+          <div 
+            onClick={() => setActiveTab(1)}
+            className="flex-1 flex justify-center items-center cursor-pointer" 
+            style={{ padding: '16px 0', borderBottom: activeTab === 1 ? '2px solid #6fd3ee' : 'none', borderRight: '1px solid #1c3e2a', backgroundColor: activeTab === 1 ? '#183526' : 'transparent' }}
+          >
+            <span style={{ fontSize: '10px', color: activeTab === 1 ? '#6fd3ee' : '#456b54', fontWeight: 'bold', letterSpacing: '0.1em', display: 'flex', alignItems: 'center' }}>
+              <span style={{ border: `1px solid ${activeTab === 1 ? '#6fd3ee' : '#456b54'}`, padding: '2px 6px', marginRight: '8px', borderRadius: '2px' }}>1-3</span> CONFIG
+            </span>
           </div>
-
-          <div className="flex flex-row w-full" style={{ backgroundColor: '#132a1d', borderBottom: '1px solid #1c3e2a' }}>
-            <div 
-              onClick={() => setActiveTab(1)}
-              className="flex-1 flex justify-center items-center cursor-pointer" 
-              style={{ padding: '16px 0', borderBottom: activeTab === 1 ? '2px solid #6fd3ee' : 'none', borderRight: '1px solid #1c3e2a', backgroundColor: activeTab === 1 ? '#183526' : 'transparent' }}
-            >
-              <span style={{ fontSize: '10px', color: activeTab === 1 ? '#6fd3ee' : '#456b54', fontWeight: 'bold', letterSpacing: '0.1em', display: 'flex', alignItems: 'center' }}>
-                <span style={{ border: `1px solid ${activeTab === 1 ? '#6fd3ee' : '#456b54'}`, padding: '2px 6px', marginRight: '8px', borderRadius: '2px' }}>1-3</span> CONFIG
-              </span>
-            </div>
-            <div 
-              onClick={() => { if (txHash) setActiveTab(4) }}
-              className="flex-1 flex justify-center items-center" 
-              style={{ padding: '16px 0', borderBottom: activeTab === 4 ? '2px solid #6fd3ee' : 'none', backgroundColor: activeTab === 4 ? '#183526' : 'transparent', cursor: txHash ? 'pointer' : 'not-allowed', opacity: txHash ? 1 : 0.5 }}
-            >
-              <span style={{ fontSize: '10px', color: activeTab === 4 ? '#6fd3ee' : '#456b54', fontWeight: 'bold', letterSpacing: '0.1em', display: 'flex', alignItems: 'center' }}>
-                <span style={{ border: `1px solid ${activeTab === 4 ? '#6fd3ee' : '#456b54'}`, padding: '2px 6px', marginRight: '8px', borderRadius: '2px' }}>4</span> STATUS
-              </span>
-            </div>
+          <div 
+            onClick={() => { if (txHash) setActiveTab(4) }}
+            className="flex-1 flex justify-center items-center" 
+            style={{ padding: '16px 0', borderBottom: activeTab === 4 ? '2px solid #6fd3ee' : 'none', backgroundColor: activeTab === 4 ? '#183526' : 'transparent', cursor: txHash ? 'pointer' : 'not-allowed', opacity: txHash ? 1 : 0.5 }}
+          >
+            <span style={{ fontSize: '10px', color: activeTab === 4 ? '#6fd3ee' : '#456b54', fontWeight: 'bold', letterSpacing: '0.1em', display: 'flex', alignItems: 'center' }}>
+              <span style={{ border: `1px solid ${activeTab === 4 ? '#6fd3ee' : '#456b54'}`, padding: '2px 6px', marginRight: '8px', borderRadius: '2px' }}>4</span> STATUS
+            </span>
           </div>
+        </div>
 
-          {activeTab === 1 && (
-            <div style={{ padding: '32px', display: 'flex', flexDirection: 'column', width: '100%' }}>
-              <h3 style={{ color: '#6fd3ee', fontSize: '12px', fontWeight: 'bold', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '16px' }}>Bridge Direction</h3>
-              
-              <div style={{ display: 'flex', position: 'relative', width: '100%' }}>
-                <div onClick={() => setIsChainDropdownOpen(!isChainDropdownOpen)} style={{ flex: 1, backgroundColor: '#183526', border: '1px solid #6fd3ee', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '140px', cursor: 'pointer', position: 'relative' }}>
-                  <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: '#213a2d', border: `1px solid ${selectedChain.color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
-                    {renderChainIcon(selectedChain.type, selectedChain.color)}
-                  </div>
-                  <span style={{ color: 'white', fontWeight: '600', fontSize: '14px', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>{selectedChain.name} <ChevronDown size={14} color="#6fd3ee" /></span>
-                  <span style={{ color: '#5b7d68', fontSize: '10px', fontWeight: 'bold', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Source</span>
-
-                  {isChainDropdownOpen && (
-                    <div style={{ position: 'absolute', top: '100%', left: '-1px', right: '-1px', backgroundColor: '#183526', border: '1px solid #6fd3ee', zIndex: 50 }}>
-                      {SUPPORTED_CHAINS.map((chain) => (
-                        <div 
-                          key={chain.name}
-                          onClick={() => { setSelectedChain(chain); connectWallet(); }}
-                          style={{ padding: '12px', display: 'flex', alignItems: 'center', gap: '12px', borderBottom: '1px solid #1c3e2a', transition: 'background 0.2s' }}
-                          onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#1c3e2a'}
-                          onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                        >
-                           <div style={{ width: '20px', height: '20px' }}>{renderChainIcon(chain.type, chain.color)}</div>
-                           <span style={{ fontSize: '12px', fontWeight: '600', color: chain.nftContract ? 'white' : '#5b7d68' }}>{chain.name} {chain.nftContract ? '' : '(Soon)'}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+        {activeTab === 1 && (
+          <div style={{ padding: '32px', display: 'flex', flexDirection: 'column', width: '100%' }}>
+            <h3 style={{ color: '#6fd3ee', fontSize: '12px', fontWeight: 'bold', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '16px' }}>Bridge Direction</h3>
+            
+            <div style={{ display: 'flex', position: 'relative', width: '100%' }}>
+              <div onClick={() => setIsChainDropdownOpen(!isChainDropdownOpen)} style={{ flex: 1, backgroundColor: '#183526', border: '1px solid #6fd3ee', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '140px', cursor: 'pointer', position: 'relative' }}>
+                <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: '#213a2d', border: `1px solid ${selectedChain.color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
+                  {renderChainIcon(selectedChain.type, selectedChain.color)}
                 </div>
+                <span style={{ color: 'white', fontWeight: '600', fontSize: '14px', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>{selectedChain.name} <ChevronDown size={14} color="#6fd3ee" /></span>
+                <span style={{ color: '#5b7d68', fontSize: '10px', fontWeight: 'bold', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Source</span>
 
-                <div style={{ flex: 1, backgroundColor: '#132a1d', border: '1px solid #1c3e2a', borderLeft: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '140px' }}>
-                  <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: '#193922', border: '1px solid #37b258', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
-                     <span style={{ color: '#37b258', fontWeight: '900', fontSize: '16px', fontFamily: 'serif' }}>R</span>
-                  </div>
-                  <span style={{ color: 'white', fontWeight: '600', fontSize: '14px', marginBottom: '4px' }}>Robinhood L2</span>
-                  <span style={{ color: '#5b7d68', fontSize: '10px', fontWeight: 'bold', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Destination</span>
-                </div>
-
-                <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#132a1d', border: '1px solid #1c3e2a', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
-                  <ArrowRightLeft size={16} color="#6fd3ee" />
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', gap: '16px', marginTop: '32px', marginBottom: '16px', flexWrap: 'wrap' }}>
-                 <div style={{ flex: '1 1 40%', minWidth: '220px', position: 'relative' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                      <h3 style={{ color: '#6fd3ee', fontSize: '12px', fontWeight: 'bold', letterSpacing: '0.1em', textTransform: 'uppercase', margin: 0 }}>Select Asset</h3>
-                      <button onClick={handleMint} disabled={isMinting || !selectedChain.nftContract} style={{ background: 'transparent', border: 'none', color: '#6fd3ee', fontSize: '9px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <Hammer size={10} /> {isMinting ? "MINTING..." : "MINT TEST NFT"}
-                      </button>
-                    </div>
-                    
-                    <div 
-                      onClick={() => { if (!account) return alert("Connectez d'abord votre wallet !"); setIsNftDropdownOpen(!isNftDropdownOpen); }}
-                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', backgroundColor: '#173324', border: '1px solid #1c3e2a', padding: '10px 14px', cursor: account ? 'pointer' : 'not-allowed', opacity: account ? 1 : 0.5, height: '48px' }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        {selectedNft ? (
-                          <>
-                            {selectedNft.image ? ( <img src={selectedNft.image} alt={selectedNft.name} style={{ width: '26px', height: '26px', borderRadius: '4px', border: '1px solid #5b7d68', objectFit: 'cover' }} /> ) : (
-                              <div style={{ width: '26px', height: '26px', borderRadius: '4px', backgroundColor: '#213a2d', border: '1px solid #5b7d68', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ImageIcon size={14} color="#5b7d68" /></div>
-                            )}
-                            <span style={{ color: 'white', fontWeight: '600', fontSize: '13px' }}>{selectedNft.name}</span>
-                          </>
-                        ) : (
-                          <><ImageIcon size={18} color="#5b7d68" /><span style={{ color: '#5b7d68', fontSize: '13px', fontWeight: '500' }}>{account ? "Select a NFT to bridge..." : "Wallet not connected"}</span></>
-                        )}
+                {isChainDropdownOpen && (
+                  <div style={{ position: 'absolute', top: '100%', left: '-1px', right: '-1px', backgroundColor: '#183526', border: '1px solid #6fd3ee', zIndex: 50 }}>
+                    {SUPPORTED_CHAINS.map((chain) => (
+                      <div 
+                        key={chain.name}
+                        onClick={() => { setSelectedChain(chain); connectWallet(); }}
+                        style={{ padding: '12px', display: 'flex', alignItems: 'center', gap: '12px', borderBottom: '1px solid #1c3e2a', transition: 'background 0.2s' }}
+                        onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#1c3e2a'}
+                        onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                      >
+                         <div style={{ width: '20px', height: '20px' }}>{renderChainIcon(chain.type, chain.color)}</div>
+                         <span style={{ fontSize: '12px', fontWeight: '600', color: chain.nftContract ? 'white' : '#5b7d68' }}>{chain.name} {chain.nftContract ? '' : '(Soon)'}</span>
                       </div>
-                      <ChevronDown size={16} color="#5b7d68" />
-                    </div>
-
-                    {isNftDropdownOpen && account && (
-                      <div className="nft-scroll" style={{ position: 'absolute', top: '100%', left: '0', right: '0', backgroundColor: '#183526', border: '1px solid #6fd3ee', borderTop: 'none', zIndex: 50, maxHeight: '240px', overflowY: 'auto' }}>
-                        {isLoadingNFTs ? (
-                          <div style={{ padding: '24px', display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#6fd3ee' }}><Loader2 size={18} className="animate-spin" style={{ marginRight: '8px' }} /> <span style={{ fontSize: '12px', fontWeight: '600' }}>Scanning wallet...</span></div>
-                        ) : ownedNFTs.length > 0 ? (
-                          ownedNFTs.map((nft) => (
-                            <div key={nft.id} onClick={() => { setSelectedNft(nft); setTokenId(nft.id); setIsNftDropdownOpen(false); }} style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #1c3e2a', cursor: 'pointer', transition: 'background 0.2s' }} onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#1c3e2a'} onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                 {nft.image ? ( <img src={nft.image} alt={nft.name} style={{ width: '36px', height: '36px', borderRadius: '4px', border: '1px solid #5b7d68', objectFit: 'cover' }} /> ) : (
-                                   <div style={{ width: '36px', height: '36px', borderRadius: '4px', backgroundColor: '#213a2d', border: '1px solid #5b7d68', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ImageIcon size={16} color="#5b7d68" /></div>
-                                 )}
-                                 <span style={{ fontSize: '13px', fontWeight: '600', color: 'white' }}>{nft.name}</span>
-                               </div>
-                               <span style={{ fontSize: '10px', color: '#6fd3ee', fontFamily: 'monospace', fontWeight: 'bold' }}>ID: #{nft.id}</span>
-                            </div>
-                          ))
-                        ) : (
-                          <div style={{ padding: '24px', textAlign: 'center', color: '#5b7d68', fontSize: '12px', fontWeight: '500' }}>Aucun NFT trouvé sur ce réseau.</div>
-                        )}
-                      </div>
-                    )}
-                 </div>
-
-                 <div style={{ flex: '1 1 55%', minWidth: '220px' }}>
-                    <h3 style={{ color: '#6fd3ee', fontSize: '12px', fontWeight: 'bold', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '16px' }}>Destination Address</h3>
-                    <div style={{ display: 'flex', alignItems: 'center', width: '100%', backgroundColor: '#173324', border: '1px solid #1c3e2a', padding: '10px 14px', height: '48px' }}>
-                      <Wallet size={18} color="#5b7d68" style={{ marginRight: '12px' }} />
-                      <input type="text" placeholder="0x..." value={account || ""} readOnly style={{ flex: 1, backgroundColor: 'transparent', border: 'none', outline: 'none', color: 'white', fontFamily: 'monospace', fontSize: '14px', width: '100%' }} />
-                    </div>
-                 </div>
-              </div>
-
-              <button onClick={handleBridge} disabled={btnState.disabled} style={{ width: '100%', marginTop: '32px', padding: '16px', backgroundColor: btnState.disabled ? '#5b7d68' : '#6fd3ee', color: '#11261a', fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.1em', textTransform: 'uppercase', border: 'none', cursor: btnState.disabled ? 'not-allowed' : 'pointer', transition: 'background-color 0.2s' }}>
-                {btnState.text}
-              </button>
-            </div>
-          )}
-
-          {activeTab === 4 && (
-            <div style={{ padding: '40px 32px', display: 'flex', flexDirection: 'column', width: '100%', minHeight: '380px' }}>
-              
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
-                <h3 style={{ color: '#6fd3ee', fontSize: '14px', fontWeight: 'bold', letterSpacing: '0.1em', textTransform: 'uppercase', margin: 0 }}>
-                  Bridge Tracker
-                </h3>
-                {txHash && (
-                  <a href={`https://sepolia.etherscan.io/tx/${txHash}`} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#5b7d68', fontSize: '11px', textDecoration: 'none', borderBottom: '1px solid #5b7d68', paddingBottom: '2px' }}>
-                    View on Etherscan <ExternalLink size={12} />
-                  </a>
+                    ))}
+                  </div>
                 )}
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '32px', position: 'relative' }}>
-                <div style={{ position: 'absolute', left: '16px', top: '16px', bottom: '16px', width: '2px', backgroundColor: '#1c3e2a', zIndex: 0 }}></div>
-
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '20px', zIndex: 10 }}>
-                  <div style={{ width: '34px', height: '34px', borderRadius: '50%', backgroundColor: crossChainProgress >= 1 ? '#183526' : '#132a1d', border: `2px solid ${crossChainProgress >= 1 ? '#37b258' : '#1c3e2a'}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {crossChainProgress >= 1 ? <CheckCircle2 size={18} color="#37b258" /> : <Clock size={16} color="#5b7d68" />}
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', marginTop: '6px' }}>
-                    <span style={{ color: crossChainProgress >= 1 ? 'white' : '#5b7d68', fontSize: '14px', fontWeight: '600' }}>1. Validated on {selectedChain.name}</span>
-                    <span style={{ color: '#5b7d68', fontSize: '11px', marginTop: '4px' }}>Assets are successfully locked in the bridge contract.</span>
-                  </div>
+              <div style={{ flex: 1, backgroundColor: '#132a1d', border: '1px solid #1c3e2a', borderLeft: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '140px' }}>
+                <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: '#193922', border: '1px solid #37b258', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
+                   <span style={{ color: '#37b258', fontWeight: '900', fontSize: '16px', fontFamily: 'serif' }}>R</span>
                 </div>
+                <span style={{ color: 'white', fontWeight: '600', fontSize: '14px', marginBottom: '4px' }}>Robinhood L2</span>
+                <span style={{ color: '#5b7d68', fontSize: '10px', fontWeight: 'bold', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Destination</span>
+              </div>
 
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '20px', zIndex: 10 }}>
-                  <div className={crossChainProgress === 1 ? "status-pulse" : ""} style={{ width: '34px', height: '34px', borderRadius: '50%', backgroundColor: crossChainProgress >= 2 ? '#183526' : '#132a1d', border: `2px solid ${crossChainProgress >= 2 ? '#37b258' : (crossChainProgress === 1 ? '#6fd3ee' : '#1c3e2a')}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {crossChainProgress >= 2 ? <CheckCircle2 size={18} color="#37b258" /> : (crossChainProgress === 1 ? <Loader2 size={16} color="#6fd3ee" className="animate-spin" /> : <Clock size={16} color="#5b7d68" />)}
+              <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#132a1d', border: '1px solid #1c3e2a', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
+                <ArrowRightLeft size={16} color="#6fd3ee" />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '16px', marginTop: '32px', marginBottom: '16px', flexWrap: 'wrap' }}>
+               <div style={{ flex: '1 1 40%', minWidth: '220px', position: 'relative' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                    <h3 style={{ color: '#6fd3ee', fontSize: '12px', fontWeight: 'bold', letterSpacing: '0.1em', textTransform: 'uppercase', margin: 0 }}>Select Asset</h3>
+                    <button onClick={handleMint} disabled={isMinting || !selectedChain.nftContract} style={{ background: 'transparent', border: 'none', color: '#6fd3ee', fontSize: '9px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Hammer size={10} /> {isMinting ? "MINTING..." : "MINT TEST NFT"}
+                    </button>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', marginTop: '6px' }}>
-                    <span style={{ color: crossChainProgress >= 2 ? 'white' : (crossChainProgress === 1 ? '#6fd3ee' : '#5b7d68'), fontSize: '14px', fontWeight: '600' }}>2. Cross-Chain Relaying</span>
-                    <span style={{ color: '#5b7d68', fontSize: '11px', marginTop: '4px' }}>Proof of deposit is being transmitted to the destination network.</span>
+                  
+                  <div 
+                    onClick={() => { if (!account) return alert("Connectez d'abord votre wallet !"); setIsNftDropdownOpen(!isNftDropdownOpen); }}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', backgroundColor: '#173324', border: '1px solid #1c3e2a', padding: '10px 14px', cursor: account ? 'pointer' : 'not-allowed', opacity: account ? 1 : 0.5, height: '48px' }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      {selectedNft ? (
+                        <>
+                          {selectedNft.image ? ( <img src={selectedNft.image} alt={selectedNft.name} style={{ width: '26px', height: '26px', borderRadius: '4px', border: '1px solid #5b7d68', objectFit: 'cover' }} /> ) : (
+                            <div style={{ width: '26px', height: '26px', borderRadius: '4px', backgroundColor: '#213a2d', border: '1px solid #5b7d68', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ImageIcon size={14} color="#5b7d68" /></div>
+                          )}
+                          <span style={{ color: 'white', fontWeight: '600', fontSize: '13px' }}>{selectedNft.name}</span>
+                        </>
+                      ) : (
+                        <><ImageIcon size={18} color="#5b7d68" /><span style={{ color: '#5b7d68', fontSize: '13px', fontWeight: '500' }}>{account ? "Select a NFT to bridge..." : "Wallet not connected"}</span></>
+                      )}
+                    </div>
+                    <ChevronDown size={16} color="#5b7d68" />
                   </div>
+
+                  {isNftDropdownOpen && account && (
+                    <div className="nft-scroll" style={{ position: 'absolute', top: '100%', left: '0', right: '0', backgroundColor: '#183526', border: '1px solid #6fd3ee', borderTop: 'none', zIndex: 50, maxHeight: '240px', overflowY: 'auto' }}>
+                      {isLoadingNFTs ? (
+                        <div style={{ padding: '24px', display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#6fd3ee' }}><Loader2 size={18} className="animate-spin" style={{ marginRight: '8px' }} /> <span style={{ fontSize: '12px', fontWeight: '600' }}>Scanning wallet...</span></div>
+                      ) : ownedNFTs.length > 0 ? (
+                        ownedNFTs.map((nft) => (
+                          <div key={nft.id} onClick={() => { setSelectedNft(nft); setTokenId(nft.id); setIsNftDropdownOpen(false); }} style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #1c3e2a', cursor: 'pointer', transition: 'background 0.2s' }} onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#1c3e2a'} onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                               {nft.image ? ( <img src={nft.image} alt={nft.name} style={{ width: '36px', height: '36px', borderRadius: '4px', border: '1px solid #5b7d68', objectFit: 'cover' }} /> ) : (
+                                 <div style={{ width: '36px', height: '36px', borderRadius: '4px', backgroundColor: '#213a2d', border: '1px solid #5b7d68', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ImageIcon size={16} color="#5b7d68" /></div>
+                               )}
+                               <span style={{ fontSize: '13px', fontWeight: '600', color: 'white' }}>{nft.name}</span>
+                             </div>
+                             <span style={{ fontSize: '10px', color: '#6fd3ee', fontFamily: 'monospace', fontWeight: 'bold' }}>ID: #{nft.id}</span>
+                          </div>
+                        ))
+                      ) : (
+                        <div style={{ padding: '24px', textAlign: 'center', color: '#5b7d68', fontSize: '12px', fontWeight: '500' }}>Aucun NFT trouvé.</div>
+                      )}
+                    </div>
+                  )}
+               </div>
+
+               <div style={{ flex: '1 1 55%', minWidth: '220px' }}>
+                  <h3 style={{ color: '#6fd3ee', fontSize: '12px', fontWeight: 'bold', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '16px' }}>Destination Address</h3>
+                  <div style={{ display: 'flex', alignItems: 'center', width: '100%', backgroundColor: '#173324', border: '1px solid #1c3e2a', padding: '10px 14px', height: '48px' }}>
+                    <Wallet size={18} color="#5b7d68" style={{ marginRight: '12px' }} />
+                    <input type="text" placeholder="0x..." value={account || ""} readOnly style={{ flex: 1, backgroundColor: 'transparent', border: 'none', outline: 'none', color: 'white', fontFamily: 'monospace', fontSize: '14px', width: '100%' }} />
+                  </div>
+               </div>
+            </div>
+
+            <button onClick={handleBridge} disabled={btnState.disabled} style={{ width: '100%', marginTop: '32px', padding: '16px', backgroundColor: btnState.disabled ? '#5b7d68' : '#6fd3ee', color: '#11261a', fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.1em', textTransform: 'uppercase', border: 'none', cursor: btnState.disabled ? 'not-allowed' : 'pointer', transition: 'background-color 0.2s' }}>
+              {btnState.text}
+            </button>
+          </div>
+        )}
+
+        {activeTab === 4 && (
+          <div style={{ padding: '40px 32px', display: 'flex', flexDirection: 'column', width: '100%', minHeight: '380px' }}>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
+              <h3 style={{ color: '#6fd3ee', fontSize: '14px', fontWeight: 'bold', letterSpacing: '0.1em', textTransform: 'uppercase', margin: 0 }}>
+                Bridge Tracker
+              </h3>
+              {txHash && (
+                <a href={`https://sepolia.etherscan.io/tx/${txHash}`} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#5b7d68', fontSize: '11px', textDecoration: 'none', borderBottom: '1px solid #5b7d68', paddingBottom: '2px' }}>
+                  View on Etherscan <ExternalLink size={12} />
+                </a>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '32px', position: 'relative' }}>
+              <div style={{ position: 'absolute', left: '16px', top: '16px', bottom: '16px', width: '2px', backgroundColor: '#1c3e2a', zIndex: 0 }}></div>
+
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '20px', zIndex: 10 }}>
+                <div style={{ width: '34px', height: '34px', borderRadius: '50%', backgroundColor: crossChainProgress >= 1 ? '#183526' : '#132a1d', border: `2px solid ${crossChainProgress >= 1 ? '#37b258' : '#1c3e2a'}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {crossChainProgress >= 1 ? <CheckCircle2 size={18} color="#37b258" /> : <Clock size={16} color="#5b7d68" />}
                 </div>
-
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '20px', zIndex: 10 }}>
-                  <div className={crossChainProgress === 2 ? "status-pulse" : ""} style={{ width: '34px', height: '34px', borderRadius: '50%', backgroundColor: crossChainProgress >= 3 ? '#183526' : '#132a1d', border: `2px solid ${crossChainProgress >= 3 ? '#37b258' : (crossChainProgress === 2 ? '#6fd3ee' : '#1c3e2a')}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {crossChainProgress >= 3 ? <CheckCircle2 size={18} color="#37b258" /> : (crossChainProgress === 2 ? <Loader2 size={16} color="#6fd3ee" className="animate-spin" /> : <Clock size={16} color="#5b7d68" />)}
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', marginTop: '6px' }}>
-                    <span style={{ color: crossChainProgress >= 3 ? '#37b258' : (crossChainProgress === 2 ? '#6fd3ee' : '#5b7d68'), fontSize: '14px', fontWeight: '600' }}>3. Delivered to Robinhood L2</span>
-                    <span style={{ color: '#5b7d68', fontSize: '11px', marginTop: '4px' }}>Wrapped NFT has been minted to your address.</span>
-                  </div>
+                <div style={{ display: 'flex', flexDirection: 'column', marginTop: '6px' }}>
+                  <span style={{ color: crossChainProgress >= 1 ? 'white' : '#5b7d68', fontSize: '14px', fontWeight: '600' }}>1. Validated on {selectedChain.name}</span>
+                  <span style={{ color: '#5b7d68', fontSize: '11px', marginTop: '4px' }}>Assets are successfully locked in the bridge contract.</span>
                 </div>
               </div>
-              
-              {crossChainProgress === 3 && (
-                 <div style={{ marginTop: 'auto', padding: '16px', backgroundColor: '#183526', border: '1px dashed #37b258', borderRadius: '4px', textAlign: 'center' }}>
-                   <span style={{ color: '#37b258', fontSize: '12px', fontWeight: 'bold', letterSpacing: '0.1em', textTransform: 'uppercase' }}>BRIDGE COMPLETE 🎉</span>
-                 </div>
-              )}
 
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '20px', zIndex: 10 }}>
+                <div className={crossChainProgress === 1 ? "status-pulse" : ""} style={{ width: '34px', height: '34px', borderRadius: '50%', backgroundColor: crossChainProgress >= 2 ? '#183526' : '#132a1d', border: `2px solid ${crossChainProgress >= 2 ? '#37b258' : (crossChainProgress === 1 ? '#6fd3ee' : '#1c3e2a')}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {crossChainProgress >= 2 ? <CheckCircle2 size={18} color="#37b258" /> : (crossChainProgress === 1 ? <Loader2 size={16} color="#6fd3ee" className="animate-spin" /> : <Clock size={16} color="#5b7d68" />)}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', marginTop: '6px' }}>
+                  <span style={{ color: crossChainProgress >= 2 ? 'white' : (crossChainProgress === 1 ? '#6fd3ee' : '#5b7d68'), fontSize: '14px', fontWeight: '600' }}>2. Cross-Chain Relaying</span>
+                  <span style={{ color: '#5b7d68', fontSize: '11px', marginTop: '4px' }}>Proof of deposit is being transmitted to the destination network.</span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '20px', zIndex: 10 }}>
+                <div className={crossChainProgress === 2 ? "status-pulse" : ""} style={{ width: '34px', height: '34px', borderRadius: '50%', backgroundColor: crossChainProgress >= 3 ? '#183526' : '#132a1d', border: `2px solid ${crossChainProgress >= 3 ? '#37b258' : (crossChainProgress === 2 ? '#6fd3ee' : '#1c3e2a')}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {crossChainProgress >= 3 ? <CheckCircle2 size={18} color="#37b258" /> : (crossChainProgress === 2 ? <Loader2 size={16} color="#6fd3ee" className="animate-spin" /> : <Clock size={16} color="#5b7d68" />)}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', marginTop: '6px' }}>
+                  <span style={{ color: crossChainProgress >= 3 ? '#37b258' : (crossChainProgress === 2 ? '#6fd3ee' : '#5b7d68'), fontSize: '14px', fontWeight: '600' }}>3. Delivered to Robinhood L2</span>
+                  <span style={{ color: '#5b7d68', fontSize: '11px', marginTop: '4px' }}>Wrapped NFT has been minted to your address.</span>
+                </div>
+              </div>
             </div>
-          )}
+            
+            {crossChainProgress === 3 && (
+               <div style={{ marginTop: 'auto', padding: '16px', backgroundColor: '#183526', border: '1px dashed #37b258', borderRadius: '4px', textAlign: 'center' }}>
+                 <span style={{ color: '#37b258', fontSize: '12px', fontWeight: 'bold', letterSpacing: '0.1em', textTransform: 'uppercase' }}>BRIDGE COMPLETE 🎉</span>
+               </div>
+            )}
 
-          <div style={{ paddingBottom: '32px', paddingTop: activeTab === 4 ? '0' : '0', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
-            <Lock size={12} color="#5b7d68" style={{ marginRight: '6px' }} />
-            <span style={{ color: '#5b7d68', fontSize: '10px', fontWeight: 'bold', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-              BUILT BY S9GCORP
-            </span>
           </div>
+        )}
 
+        <div style={{ paddingBottom: '32px', paddingTop: activeTab === 4 ? '0' : '0', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+          <Lock size={12} color="#5b7d68" style={{ marginRight: '6px' }} />
+          <span style={{ color: '#5b7d68', fontSize: '10px', fontWeight: 'bold', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+            BUILT BY S9GCORP
+          </span>
         </div>
+
       </div>
-    </>
+    </div>
   );
 }

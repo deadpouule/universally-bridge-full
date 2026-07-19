@@ -48,15 +48,12 @@ export interface SpokeBridgeL1Interface extends Interface {
       | "oAppVersion"
       | "owner"
       | "peers"
-      | "quoteBridgeFee"
       | "renounceOwnership"
       | "serviceFee"
       | "setDelegate"
       | "setDestinationEid"
       | "setPeer"
-      | "setServiceFee"
       | "transferOwnership"
-      | "withdrawTreasury"
   ): FunctionFragment;
 
   getEvent(
@@ -98,10 +95,6 @@ export interface SpokeBridgeL1Interface extends Interface {
   encodeFunctionData(functionFragment: "owner", values?: undefined): string;
   encodeFunctionData(functionFragment: "peers", values: [BigNumberish]): string;
   encodeFunctionData(
-    functionFragment: "quoteBridgeFee",
-    values: [AddressLike, AddressLike, BigNumberish]
-  ): string;
-  encodeFunctionData(
     functionFragment: "renounceOwnership",
     values?: undefined
   ): string;
@@ -122,16 +115,8 @@ export interface SpokeBridgeL1Interface extends Interface {
     values: [BigNumberish, BytesLike]
   ): string;
   encodeFunctionData(
-    functionFragment: "setServiceFee",
-    values: [BigNumberish]
-  ): string;
-  encodeFunctionData(
     functionFragment: "transferOwnership",
     values: [AddressLike]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "withdrawTreasury",
-    values?: undefined
   ): string;
 
   decodeFunctionResult(
@@ -157,10 +142,6 @@ export interface SpokeBridgeL1Interface extends Interface {
   decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "peers", data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "quoteBridgeFee",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
     functionFragment: "renounceOwnership",
     data: BytesLike
   ): Result;
@@ -175,15 +156,7 @@ export interface SpokeBridgeL1Interface extends Interface {
   ): Result;
   decodeFunctionResult(functionFragment: "setPeer", data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "setServiceFee",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
     functionFragment: "transferOwnership",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "withdrawTreasury",
     data: BytesLike
   ): Result;
 }
@@ -335,12 +308,6 @@ export interface SpokeBridgeL1 extends BaseContract {
 
   peers: TypedContractMethod<[eid: BigNumberish], [string], "view">;
 
-  quoteBridgeFee: TypedContractMethod<
-    [user: AddressLike, nftContract: AddressLike, tokenId: BigNumberish],
-    [bigint],
-    "view"
-  >;
-
   renounceOwnership: TypedContractMethod<[], [void], "nonpayable">;
 
   serviceFee: TypedContractMethod<[], [bigint], "view">;
@@ -363,19 +330,11 @@ export interface SpokeBridgeL1 extends BaseContract {
     "nonpayable"
   >;
 
-  setServiceFee: TypedContractMethod<
-    [_fee: BigNumberish],
-    [void],
-    "nonpayable"
-  >;
-
   transferOwnership: TypedContractMethod<
     [newOwner: AddressLike],
     [void],
     "nonpayable"
   >;
-
-  withdrawTreasury: TypedContractMethod<[], [void], "nonpayable">;
 
   getFunction<T extends ContractMethod = ContractMethod>(
     key: string | FunctionFragment
@@ -438,13 +397,6 @@ export interface SpokeBridgeL1 extends BaseContract {
     nameOrSignature: "peers"
   ): TypedContractMethod<[eid: BigNumberish], [string], "view">;
   getFunction(
-    nameOrSignature: "quoteBridgeFee"
-  ): TypedContractMethod<
-    [user: AddressLike, nftContract: AddressLike, tokenId: BigNumberish],
-    [bigint],
-    "view"
-  >;
-  getFunction(
     nameOrSignature: "renounceOwnership"
   ): TypedContractMethod<[], [void], "nonpayable">;
   getFunction(
@@ -464,14 +416,8 @@ export interface SpokeBridgeL1 extends BaseContract {
     "nonpayable"
   >;
   getFunction(
-    nameOrSignature: "setServiceFee"
-  ): TypedContractMethod<[_fee: BigNumberish], [void], "nonpayable">;
-  getFunction(
     nameOrSignature: "transferOwnership"
   ): TypedContractMethod<[newOwner: AddressLike], [void], "nonpayable">;
-  getFunction(
-    nameOrSignature: "withdrawTreasury"
-  ): TypedContractMethod<[], [void], "nonpayable">;
 
   getEvent(
     key: "BridgeInitiated"

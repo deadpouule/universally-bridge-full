@@ -41,17 +41,18 @@ export interface HubBridgeL1Interface extends Interface {
       | "allowInitializePath"
       | "endpoint"
       | "isComposeMsgSender"
-      | "l2Configs"
       | "lzReceive"
       | "nextNonce"
       | "oAppVersion"
       | "owner"
       | "peers"
       | "renounceOwnership"
+      | "robinhoodConfig"
       | "setDelegate"
-      | "setL2Config"
       | "setPeer"
+      | "setRobinhoodConfig"
       | "transferOwnership"
+      | "withdrawTreasury"
   ): FunctionFragment;
 
   getEvent(
@@ -66,10 +67,6 @@ export interface HubBridgeL1Interface extends Interface {
   encodeFunctionData(
     functionFragment: "isComposeMsgSender",
     values: [OriginStruct, BytesLike, AddressLike]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "l2Configs",
-    values: [BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "lzReceive",
@@ -90,20 +87,28 @@ export interface HubBridgeL1Interface extends Interface {
     values?: undefined
   ): string;
   encodeFunctionData(
-    functionFragment: "setDelegate",
-    values: [AddressLike]
+    functionFragment: "robinhoodConfig",
+    values?: undefined
   ): string;
   encodeFunctionData(
-    functionFragment: "setL2Config",
-    values: [BigNumberish, AddressLike, AddressLike]
+    functionFragment: "setDelegate",
+    values: [AddressLike]
   ): string;
   encodeFunctionData(
     functionFragment: "setPeer",
     values: [BigNumberish, BytesLike]
   ): string;
   encodeFunctionData(
+    functionFragment: "setRobinhoodConfig",
+    values: [AddressLike, AddressLike]
+  ): string;
+  encodeFunctionData(
     functionFragment: "transferOwnership",
     values: [AddressLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "withdrawTreasury",
+    values?: undefined
   ): string;
 
   decodeFunctionResult(
@@ -115,7 +120,6 @@ export interface HubBridgeL1Interface extends Interface {
     functionFragment: "isComposeMsgSender",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "l2Configs", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "lzReceive", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "nextNonce", data: BytesLike): Result;
   decodeFunctionResult(
@@ -129,16 +133,24 @@ export interface HubBridgeL1Interface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "setDelegate",
+    functionFragment: "robinhoodConfig",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "setL2Config",
+    functionFragment: "setDelegate",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "setPeer", data: BytesLike): Result;
   decodeFunctionResult(
+    functionFragment: "setRobinhoodConfig",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "transferOwnership",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "withdrawTreasury",
     data: BytesLike
   ): Result;
 }
@@ -173,19 +185,12 @@ export namespace RelayedToL2Event {
   export type InputTuple = [
     user: AddressLike,
     tokenId: BigNumberish,
-    targetEid: BigNumberish,
     ticketId: BigNumberish
   ];
-  export type OutputTuple = [
-    user: string,
-    tokenId: bigint,
-    targetEid: bigint,
-    ticketId: bigint
-  ];
+  export type OutputTuple = [user: string, tokenId: bigint, ticketId: bigint];
   export interface OutputObject {
     user: string;
     tokenId: bigint;
-    targetEid: bigint;
     ticketId: bigint;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
@@ -251,18 +256,6 @@ export interface HubBridgeL1 extends BaseContract {
     "view"
   >;
 
-  l2Configs: TypedContractMethod<
-    [arg0: BigNumberish],
-    [
-      [string, string, boolean] & {
-        inbox: string;
-        destinationContract: string;
-        isActive: boolean;
-      }
-    ],
-    "view"
-  >;
-
   lzReceive: TypedContractMethod<
     [
       _origin: OriginStruct,
@@ -293,18 +286,20 @@ export interface HubBridgeL1 extends BaseContract {
 
   renounceOwnership: TypedContractMethod<[], [void], "nonpayable">;
 
-  setDelegate: TypedContractMethod<
-    [_delegate: AddressLike],
-    [void],
-    "nonpayable"
+  robinhoodConfig: TypedContractMethod<
+    [],
+    [
+      [string, string, boolean] & {
+        inbox: string;
+        destinationContract: string;
+        isActive: boolean;
+      }
+    ],
+    "view"
   >;
 
-  setL2Config: TypedContractMethod<
-    [
-      _targetEid: BigNumberish,
-      _inbox: AddressLike,
-      _destinationContract: AddressLike
-    ],
+  setDelegate: TypedContractMethod<
+    [_delegate: AddressLike],
     [void],
     "nonpayable"
   >;
@@ -315,11 +310,19 @@ export interface HubBridgeL1 extends BaseContract {
     "nonpayable"
   >;
 
+  setRobinhoodConfig: TypedContractMethod<
+    [_inbox: AddressLike, _destinationContract: AddressLike],
+    [void],
+    "nonpayable"
+  >;
+
   transferOwnership: TypedContractMethod<
     [newOwner: AddressLike],
     [void],
     "nonpayable"
   >;
+
+  withdrawTreasury: TypedContractMethod<[], [void], "nonpayable">;
 
   getFunction<T extends ContractMethod = ContractMethod>(
     key: string | FunctionFragment
@@ -336,19 +339,6 @@ export interface HubBridgeL1 extends BaseContract {
   ): TypedContractMethod<
     [arg0: OriginStruct, arg1: BytesLike, _sender: AddressLike],
     [boolean],
-    "view"
-  >;
-  getFunction(
-    nameOrSignature: "l2Configs"
-  ): TypedContractMethod<
-    [arg0: BigNumberish],
-    [
-      [string, string, boolean] & {
-        inbox: string;
-        destinationContract: string;
-        isActive: boolean;
-      }
-    ],
     "view"
   >;
   getFunction(
@@ -388,19 +378,21 @@ export interface HubBridgeL1 extends BaseContract {
     nameOrSignature: "renounceOwnership"
   ): TypedContractMethod<[], [void], "nonpayable">;
   getFunction(
+    nameOrSignature: "robinhoodConfig"
+  ): TypedContractMethod<
+    [],
+    [
+      [string, string, boolean] & {
+        inbox: string;
+        destinationContract: string;
+        isActive: boolean;
+      }
+    ],
+    "view"
+  >;
+  getFunction(
     nameOrSignature: "setDelegate"
   ): TypedContractMethod<[_delegate: AddressLike], [void], "nonpayable">;
-  getFunction(
-    nameOrSignature: "setL2Config"
-  ): TypedContractMethod<
-    [
-      _targetEid: BigNumberish,
-      _inbox: AddressLike,
-      _destinationContract: AddressLike
-    ],
-    [void],
-    "nonpayable"
-  >;
   getFunction(
     nameOrSignature: "setPeer"
   ): TypedContractMethod<
@@ -409,8 +401,18 @@ export interface HubBridgeL1 extends BaseContract {
     "nonpayable"
   >;
   getFunction(
+    nameOrSignature: "setRobinhoodConfig"
+  ): TypedContractMethod<
+    [_inbox: AddressLike, _destinationContract: AddressLike],
+    [void],
+    "nonpayable"
+  >;
+  getFunction(
     nameOrSignature: "transferOwnership"
   ): TypedContractMethod<[newOwner: AddressLike], [void], "nonpayable">;
+  getFunction(
+    nameOrSignature: "withdrawTreasury"
+  ): TypedContractMethod<[], [void], "nonpayable">;
 
   getEvent(
     key: "OwnershipTransferred"
@@ -457,7 +459,7 @@ export interface HubBridgeL1 extends BaseContract {
       PeerSetEvent.OutputObject
     >;
 
-    "RelayedToL2(address,uint256,uint32,uint256)": TypedContractEvent<
+    "RelayedToL2(address,uint256,uint256)": TypedContractEvent<
       RelayedToL2Event.InputTuple,
       RelayedToL2Event.OutputTuple,
       RelayedToL2Event.OutputObject

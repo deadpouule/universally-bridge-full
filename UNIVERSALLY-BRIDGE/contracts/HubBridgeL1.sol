@@ -5,85 +5,42 @@ import "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/OApp.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 interface IInbox {
-    function createRetryableTicket(
-        address to,
-        uint256 l2CallValue,
-        uint256 maxSubmissionCost,
-        address excessFeeRefundAddress,
-        address callValueRefundAddress,
-        uint256 gasLimit,
-        uint256 maxFeePerGas,
-        bytes calldata data
-    ) external payable returns (uint256);
+    function createRetryableTicket(address to, uint256 l2CallValue, uint256 maxSubmissionCost, address excessFeeRefundAddress, address callValueRefundAddress, uint256 gasLimit, uint256 maxFeePerGas, bytes calldata data) external payable returns (uint256);
 }
 
 contract HubBridgeL1 is OApp {
-    
-    // 🗂️ Structure de configuration pour chaque L2
-    struct L2Config {
-        address inbox;
-        address destinationContract;
-        bool isActive;
+    struct L2Config { address inbox; address destinationContract; bool isActive; }
+    L2Config public robinhoodConfig;
+
+    event RelayedToL2(address indexed user, uint256 tokenId, uint256 ticketId);
+
+    // 🔧 CORRECTION : Ajout de _owner au constructeur
+    constructor(address _endpoint, address _owner) OApp(_endpoint, _owner) Ownable(_owner) {}
+
+    function setRobinhoodConfig(address _inbox, address _destinationContract) external onlyOwner {
+        robinhoodConfig = L2Config(_inbox, _destinationContract, true);
     }
 
-    // 🗺️ Cartographie : EID final => Configuration L2
-    mapping(uint32 => L2Config) public l2Configs;
+    function _lzReceive(Origin calldata, bytes32, bytes calldata _payload, address, bytes calldata) internal override {
+        (address user, , uint256 tokenId) = abi.decode(_payload, (address, address, uint256));
 
-    event RelayedToL2(address indexed user, uint256 tokenId, uint32 targetEid, uint256 ticketId);
+        require(robinhoodConfig.isActive, "Hub: config inactive");
 
-    constructor(address _endpoint) OApp(_endpoint, msg.sender) Ownable(msg.sender) {}
-
-    // ⚙️ Ajout d'un nouveau circuit (L2) au Hub
-    function setL2Config(uint32 _targetEid, address _inbox, address _destinationContract) external onlyOwner {
-        l2Configs[_targetEid] = L2Config({
-            inbox: _inbox,
-            destinationContract: _destinationContract,
-            isActive: true
-        });
-    }
-
-    // 📥 Réception du signal LayerZero en provenance d'un Spoke (ex: Base)
-    function _lzReceive(
-        Origin calldata /*_origin*/,
-        bytes32 /*_guid*/,
-        bytes calldata _payload,
-        address /*_executor*/,
-        bytes calldata /*_extraData*/
-    ) internal override {
-        
-        // 1. Décodage étendu : On récupère la destination finale
-        (address user, , uint256 tokenId, uint32 finalDestinationEid) = abi.decode(_payload, (address, address, uint256, uint32));
-
-        // 2. Vérification de la cartographie
-        L2Config memory config = l2Configs[finalDestinationEid];
-        require(config.isActive, "Hub: Destination L2 non supportee");
-        require(config.inbox != address(0), "Hub: Inbox non configure");
-
-        // 3. Préparation de la commande pour le contrat cible
         bytes memory l2CallData = abi.encodeWithSignature("mint(address,uint256)", user, tokenId);
+        uint256 ticketCost = 0.005 ether + (2000000 * 0.5 gwei);
 
-        // 4. Paramètres de gaz L1 -> L2
-        uint256 maxSubmissionCost = 0.005 ether;
-        uint256 gasLimit = 2000000;
-        uint256 maxFeePerGas = 0.5 gwei;
-        
-        uint256 ticketCost = maxSubmissionCost + (gasLimit * maxFeePerGas);
-        require(address(this).balance >= ticketCost, "Hub: Tresorerie vide");
-
-        // 5. Achat dynamique du Ticket dans le bon Inbox
-        uint256 ticketId = IInbox(config.inbox).createRetryableTicket{value: ticketCost}(
-            config.destinationContract,
-            0,
-            maxSubmissionCost,
-            user,
-            user,
-            gasLimit,
-            maxFeePerGas,
-            l2CallData
+        uint256 ticketId = IInbox(robinhoodConfig.inbox).createRetryableTicket{value: ticketCost}(
+            robinhoodConfig.destinationContract, 0, 0.005 ether, user, user, 2000000, 0.5 gwei, l2CallData
         );
 
-        emit RelayedToL2(user, tokenId, finalDestinationEid, ticketId);
+        emit RelayedToL2(user, tokenId, ticketId);
     }
 
     receive() external payable {}
+
+    function withdrawTreasury() external onlyOwner {
+        uint256 balance = address(this).balance;
+        require(balance > 0, "Tresorerie vide");
+        payable(owner()).transfer(balance);
+    }
 }

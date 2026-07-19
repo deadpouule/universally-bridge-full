@@ -6,7 +6,6 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract RobinhoodWrappedNFT is ERC721, OApp {
-    
     constructor(address _endpoint, address _owner) 
         ERC721("Robinhood Wrapped NFT", "RWNFT") 
         OApp(_endpoint, _owner) 
@@ -14,16 +13,12 @@ contract RobinhoodWrappedNFT is ERC721, OApp {
     {}
 
     function _lzReceive(
-        Origin calldata /*_origin*/,
-        bytes32 /*_guid*/,
-        bytes calldata _payload,
-        address /*_executor*/,
-        bytes calldata /*_extraData*/
+        Origin calldata /*_origin*/, bytes32 /*_guid*/, bytes calldata _payload, address /*_executor*/, bytes calldata /*_extraData*/
     ) internal override {
-        // Décodage du signal direct en provenance de Base, Berachain, Monad ou MegaETH
+        // Décodage du signal envoyé par les Spokes
         (address user, uint256 tokenId) = abi.decode(_payload, (address, uint256));
-
-        // Mint direct on-chain sur Robinhood !
+        
+        // Mint direct !
         _safeMint(user, tokenId);
     }
 }

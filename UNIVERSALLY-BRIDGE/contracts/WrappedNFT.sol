@@ -5,18 +5,11 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract WrappedNFT is ERC721, Ownable {
-    address public bridgeHub;
+    // On passe msg.sender au constructeur d'Ownable pour OpenZeppelin v5
+    constructor() ERC721("Universally Wrapped", "uWRAP") Ownable(msg.sender) {}
 
-    constructor(string memory name, string memory symbol, address _bridgeHub) ERC721(name, symbol) Ownable(msg.sender) {
-        bridgeHub = _bridgeHub;
-    }
-
-    modifier onlyBridge() {
-        require(msg.sender == bridgeHub, "Seul le bridge peut minter");
-        _;
-    }
-
-    function mint(address to, uint256 tokenId) external onlyBridge {
-        _mint(to, tokenId);
+    // Seul le propriétaire (qui sera notre HubBridgeL2) pourra appeler cette fonction
+    function mint(address to, uint256 tokenId) external onlyOwner {
+        _safeMint(to, tokenId);
     }
 }

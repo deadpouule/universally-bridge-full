@@ -1,44 +1,58 @@
-export const NFT_ABI = [
-    "function approve(address to, uint256 tokenId) external",
-    "function getApproved(uint256 tokenId) external view returns (address)",
-    "function mint(address to) external"
-  ];
-  
-  export const BRIDGE_ABI = [
-    "function bridgeNFT(address _nftContract, uint256 _tokenId, uint256 _maxSubmissionCost, uint256 _gasLimit, uint256 _maxFeePerGas) external payable"
-  ];
-  
-  export const ALCHEMY_API_KEY = "ozz2M6FYJRXDEfJ-Huqx8";
-  
-  export const SUPPORTED_CHAINS = [
-    { 
-      id: '11155111', 
-      hex: '0xaa36a7', 
-      name: 'Eth Sepolia', 
-      type: 'Ethereum', 
-      color: '#8892f1',
-      rpc: 'https://rpc.sepolia.org',
-      nftContract: "0xA83bf30c9D0828b297095d80851A2E3CF96ff1aD",
-      bridgeContract: "0x1b37fc128F504A974c31cb89eb56704782DeaB54"
-    },
-    { 
-      id: '84532', 
-      hex: '0x14a34', 
-      name: 'Base Sepolia', 
-      type: 'Ethereum', 
-      color: '#0052ff',
-      rpc: 'https://sepolia.base.org',
-      nftContract: "0xa22DbA93B0be604bb610251E00DD89aA8069b03C", // Sera mis à jour par ton script
-      bridgeContract: "" // Sera mis à jour par ton script
-    },
-    { 
-      id: '80084', 
-      hex: '0x138d4', 
-      name: 'Berachain Test', 
-      type: 'Bear', 
-      color: '#ff8b8b',
-      rpc: 'https://artio.rpc.berachain.com',
-      nftContract: "",
-      bridgeContract: ""
-    }
-  ];
+// On importe les adresses générées automatiquement par le script Hardhat
+// (S'il y a une erreur TypeScript ici avant le premier déploiement, c'est normal)
+import * as deployments from "./deployments";
+
+export const ALCHEMY_API_KEY = "ozz2M6FYJRXDEfJ-Huqx8"; // Remplace par ta vraie clé en prod
+
+export const SUPPORTED_CHAINS = [
+  { 
+    id: '8453', 
+    hex: '0x2105', 
+    name: 'Base Mainnet', 
+    type: 'Ethereum', 
+    color: '#0052ff',
+    rpc: 'https://mainnet.base.org',
+    nftContract: deployments?.BASE_NFT || "",
+    bridgeContract: deployments?.BASE_BRIDGE || ""
+  },
+  { 
+    id: '1', 
+    hex: '0x1', 
+    name: 'Ethereum Mainnet', 
+    type: 'Ethereum', 
+    color: '#8892f1',
+    rpc: 'https://eth.llamarpc.com',
+    nftContract: deployments?.ETHEREUM_NFT || "",
+    bridgeContract: deployments?.ETHEREUM_BRIDGE || ""
+  },
+  { 
+    id: '80094', 
+    hex: '0x138de', 
+    name: 'Berachain Mainnet', 
+    type: 'Bear', 
+    color: '#ff8b8b',
+    rpc: 'https://rpc.berachain.com',
+    nftContract: deployments?.BERACHAIN_NFT || "",
+    bridgeContract: deployments?.BERACHAIN_BRIDGE || ""
+  },
+  { 
+    id: '143', 
+    hex: '0x8f', 
+    name: 'Monad Mainnet', 
+    type: 'Ethereum', 
+    color: '#836EF9',
+    rpc: 'https://rpc.monad.xyz',
+    nftContract: deployments?.MONAD_NFT || "",
+    bridgeContract: deployments?.MONAD_BRIDGE || ""
+  },
+  { 
+    id: '4326', 
+    hex: '0x10e6', 
+    name: 'MegaETH Mainnet', 
+    type: 'Ethereum', 
+    color: '#ff0000',
+    rpc: 'https://rpc.megaeth.systems',
+    nftContract: deployments?.MEGAETH_NFT || "",
+    bridgeContract: deployments?.MEGAETH_BRIDGE || ""
+  }
+];

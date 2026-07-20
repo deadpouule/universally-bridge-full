@@ -4,7 +4,11 @@ import React, { useState, useEffect } from 'react';
 import { Lock, ArrowRightLeft, Wallet, Square, ChevronDown, Hammer, ImageIcon, Loader2, CheckCircle2, ExternalLink, Clock } from 'lucide-react';
 import { ethers } from 'ethers';
 import { Network, Alchemy } from "alchemy-sdk";
-import { NFT_ABI, BRIDGE_ABI, SUPPORTED_CHAINS, ALCHEMY_API_KEY } from '../constants/config';
+import { SUPPORTED_CHAINS, ALCHEMY_API_KEY } from '../constants/config';
+
+// Importation dynamique des ABIs générées par ton script de déploiement
+import BridgeArtifact from '../abis/OmnichainNFTBridge.json';
+import NFTArtifact from '../abis/TestNFT.json';
 
 export default function UniversallyBridge() {
   const [account, setAccount] = useState<string | null>(null);
@@ -24,10 +28,11 @@ export default function UniversallyBridge() {
   const [isNftDropdownOpen, setIsNftDropdownOpen] = useState(false);
   const [isLoadingNFTs, setIsLoadingNFTs] = useState(false);
 
+  // Mise à jour pour les réseaux Mainnet supportés par Alchemy
   const getAlchemyNetwork = (chainId: string) => {
-    if (chainId === '11155111') return Network.ETH_SEPOLIA;
-    if (chainId === '84532') return Network.BASE_SEPOLIA;
-    return Network.ETH_MAINNET;
+    if (chainId === '1') return Network.ETH_MAINNET;
+    if (chainId === '8453') return Network.BASE_MAINNET;
+    return Network.ETH_MAINNET; // Fallback
   };
 
   const alchemyConfig = {
@@ -39,7 +44,8 @@ export default function UniversallyBridge() {
   const fetchUserNFTs = async (walletAddress: string) => {
     setIsLoadingNFTs(true);
     try {
-      if (selectedChain.id !== '11155111' && selectedChain.id !== '84532') {
+      // Alchemy ne supporte pas encore nativement Berachain/Monad/MegaETH
+      if (selectedChain.id !== '1' && selectedChain.id !== '8453') {
          setOwnedNFTs([]);
          setIsLoadingNFTs(false);
          return;
@@ -137,9 +143,11 @@ export default function UniversallyBridge() {
       setIsMinting(true);
       const provider = new ethers.BrowserProvider((window as any).ethereum);
       const signer = await provider.getSigner();
-      const nftContract = new ethers.Contract(selectedChain.nftContract, NFT_ABI, signer);
-      const tx = await nftContract["mint(address)"](account); 
+      const nftContract = new ethers.Contract(selectedChain.nftContract, NFTArtifact.abi, signer);
+      
+      const tx = await nftContract.mint(); 
       await tx.wait();
+      
       alert(`NFT Test généré avec succès sur ${selectedChain.name} !`);
       fetchUserNFTs(account);
     } catch (error: any) {
@@ -159,35 +167,32 @@ export default function UniversallyBridge() {
       const provider = new ethers.BrowserProvider((window as any).ethereum);
       const signer = await provider.getSigner();
       
-      const nftContract = new ethers.Contract(selectedChain.nftContract, NFT_ABI, signer);
-      const bridgeContract = new ethers.Contract(selectedChain.bridgeContract, BRIDGE_ABI, signer);
+      const nftContract = new ethers.Contract(selectedChain.nftContract, NFTArtifact.abi, signer);
+      const bridgeContract = new ethers.Contract(selectedChain.bridgeContract, BridgeArtifact.abi, signer);
 
       setStatus("approving");
       const txApprove = await nftContract.approve(selectedChain.bridgeContract, tokenId);
       await txApprove.wait();
 
       setStatus("bridging");
-      const maxSubmissionCost = ethers.parseEther("0.005"); 
-      const gasLimit = BigInt(300000); 
-      const maxFeePerGas = ethers.parseUnits("0.1", "gwei"); 
-      const totalValue = maxSubmissionCost + (gasLimit * maxFeePerGas);
+      
+      // 📡 1. Calcul du Devis (LayerZero V2 + Service)
+      const nativeFee = await bridgeContract.quoteBridge(tokenId);
+      const serviceFee = ethers.parseEther("0.001");
+      const totalFee = nativeFee + serviceFee;
+      
+      console.log(`Frais totaux requis : ${ethers.formatEther(totalFee)} ETH`);
 
+      // 🚀 2. Envoi Direct P2P
       const txBridge = await bridgeContract.bridgeNFT(
         selectedChain.nftContract,
         tokenId,
-        maxSubmissionCost,
-        gasLimit,
-        maxFeePerGas,
-        { 
-          value: totalValue,
-          gasLimit: BigInt(500000)
-        }
+        { value: totalFee }
       );
       
       const receipt = await txBridge.wait();
       setTxHash(receipt.hash);
       setStatus("success");
-      
       setActiveTab(4);
       
     } catch (error: any) {
@@ -302,7 +307,7 @@ export default function UniversallyBridge() {
                 <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: '#193922', border: '1px solid #37b258', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
                    <span style={{ color: '#37b258', fontWeight: '900', fontSize: '16px', fontFamily: 'serif' }}>R</span>
                 </div>
-                <span style={{ color: 'white', fontWeight: '600', fontSize: '14px', marginBottom: '4px' }}>Robinhood L2</span>
+                <span style={{ color: 'white', fontWeight: '600', fontSize: '14px', marginBottom: '4px' }}>Robinhood Chain</span>
                 <span style={{ color: '#5b7d68', fontSize: '10px', fontWeight: 'bold', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Destination</span>
               </div>
 
@@ -385,8 +390,8 @@ export default function UniversallyBridge() {
                 Bridge Tracker
               </h3>
               {txHash && (
-                <a href={`https://sepolia.etherscan.io/tx/${txHash}`} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#5b7d68', fontSize: '11px', textDecoration: 'none', borderBottom: '1px solid #5b7d68', paddingBottom: '2px' }}>
-                  View on Etherscan <ExternalLink size={12} />
+                <a href={`https://layerzeroscan.com/tx/${txHash}`} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#5b7d68', fontSize: '11px', textDecoration: 'none', borderBottom: '1px solid #5b7d68', paddingBottom: '2px' }}>
+                  View on LayerZero Scan <ExternalLink size={12} />
                 </a>
               )}
             </div>
@@ -410,7 +415,7 @@ export default function UniversallyBridge() {
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', marginTop: '6px' }}>
                   <span style={{ color: crossChainProgress >= 2 ? 'white' : (crossChainProgress === 1 ? '#6fd3ee' : '#5b7d68'), fontSize: '14px', fontWeight: '600' }}>2. Cross-Chain Relaying</span>
-                  <span style={{ color: '#5b7d68', fontSize: '11px', marginTop: '4px' }}>Proof of deposit is being transmitted to the destination network.</span>
+                  <span style={{ color: '#5b7d68', fontSize: '11px', marginTop: '4px' }}>Proof of deposit is being transmitted to Robinhood.</span>
                 </div>
               </div>
 

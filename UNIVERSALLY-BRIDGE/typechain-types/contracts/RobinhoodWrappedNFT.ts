@@ -35,32 +35,43 @@ export type OriginStructOutput = [
   nonce: bigint
 ] & { srcEid: bigint; sender: string; nonce: bigint };
 
-export interface SpokeBridgeL1Interface extends Interface {
+export interface RobinhoodWrappedNFTInterface extends Interface {
   getFunction(
     nameOrSignature:
       | "allowInitializePath"
-      | "bridgeNFT"
-      | "destinationEid"
+      | "approve"
+      | "balanceOf"
       | "endpoint"
+      | "getApproved"
+      | "isApprovedForAll"
       | "isComposeMsgSender"
       | "lzReceive"
+      | "name"
       | "nextNonce"
       | "oAppVersion"
       | "owner"
+      | "ownerOf"
       | "peers"
       | "renounceOwnership"
-      | "serviceFee"
+      | "safeTransferFrom(address,address,uint256)"
+      | "safeTransferFrom(address,address,uint256,bytes)"
+      | "setApprovalForAll"
       | "setDelegate"
-      | "setDestinationEid"
       | "setPeer"
+      | "supportsInterface"
+      | "symbol"
+      | "tokenURI"
+      | "transferFrom"
       | "transferOwnership"
   ): FunctionFragment;
 
   getEvent(
     nameOrSignatureOrTopic:
-      | "BridgeInitiated"
+      | "Approval"
+      | "ApprovalForAll"
       | "OwnershipTransferred"
       | "PeerSet"
+      | "Transfer"
   ): EventFragment;
 
   encodeFunctionData(
@@ -68,14 +79,22 @@ export interface SpokeBridgeL1Interface extends Interface {
     values: [OriginStruct]
   ): string;
   encodeFunctionData(
-    functionFragment: "bridgeNFT",
+    functionFragment: "approve",
     values: [AddressLike, BigNumberish]
   ): string;
   encodeFunctionData(
-    functionFragment: "destinationEid",
-    values?: undefined
+    functionFragment: "balanceOf",
+    values: [AddressLike]
   ): string;
   encodeFunctionData(functionFragment: "endpoint", values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: "getApproved",
+    values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "isApprovedForAll",
+    values: [AddressLike, AddressLike]
+  ): string;
   encodeFunctionData(
     functionFragment: "isComposeMsgSender",
     values: [OriginStruct, BytesLike, AddressLike]
@@ -84,6 +103,7 @@ export interface SpokeBridgeL1Interface extends Interface {
     functionFragment: "lzReceive",
     values: [OriginStruct, BytesLike, BytesLike, AddressLike, BytesLike]
   ): string;
+  encodeFunctionData(functionFragment: "name", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "nextNonce",
     values: [BigNumberish, BytesLike]
@@ -93,26 +113,47 @@ export interface SpokeBridgeL1Interface extends Interface {
     values?: undefined
   ): string;
   encodeFunctionData(functionFragment: "owner", values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: "ownerOf",
+    values: [BigNumberish]
+  ): string;
   encodeFunctionData(functionFragment: "peers", values: [BigNumberish]): string;
   encodeFunctionData(
     functionFragment: "renounceOwnership",
     values?: undefined
   ): string;
   encodeFunctionData(
-    functionFragment: "serviceFee",
-    values?: undefined
+    functionFragment: "safeTransferFrom(address,address,uint256)",
+    values: [AddressLike, AddressLike, BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "safeTransferFrom(address,address,uint256,bytes)",
+    values: [AddressLike, AddressLike, BigNumberish, BytesLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "setApprovalForAll",
+    values: [AddressLike, boolean]
   ): string;
   encodeFunctionData(
     functionFragment: "setDelegate",
     values: [AddressLike]
   ): string;
   encodeFunctionData(
-    functionFragment: "setDestinationEid",
+    functionFragment: "setPeer",
+    values: [BigNumberish, BytesLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "supportsInterface",
+    values: [BytesLike]
+  ): string;
+  encodeFunctionData(functionFragment: "symbol", values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: "tokenURI",
     values: [BigNumberish]
   ): string;
   encodeFunctionData(
-    functionFragment: "setPeer",
-    values: [BigNumberish, BytesLike]
+    functionFragment: "transferFrom",
+    values: [AddressLike, AddressLike, BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "transferOwnership",
@@ -123,65 +164,101 @@ export interface SpokeBridgeL1Interface extends Interface {
     functionFragment: "allowInitializePath",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "bridgeNFT", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "approve", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "balanceOf", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "endpoint", data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "destinationEid",
+    functionFragment: "getApproved",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "endpoint", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "isApprovedForAll",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "isComposeMsgSender",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "lzReceive", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "name", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "nextNonce", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "oAppVersion",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "ownerOf", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "peers", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "renounceOwnership",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "serviceFee", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "safeTransferFrom(address,address,uint256)",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "safeTransferFrom(address,address,uint256,bytes)",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "setApprovalForAll",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "setDelegate",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "setPeer", data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "setDestinationEid",
+    functionFragment: "supportsInterface",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "setPeer", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "symbol", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "tokenURI", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "transferFrom",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "transferOwnership",
     data: BytesLike
   ): Result;
 }
 
-export namespace BridgeInitiatedEvent {
+export namespace ApprovalEvent {
   export type InputTuple = [
-    user: AddressLike,
-    nftContract: AddressLike,
-    tokenId: BigNumberish,
-    totalFeePaid: BigNumberish,
-    lzFee: BigNumberish
+    owner: AddressLike,
+    approved: AddressLike,
+    tokenId: BigNumberish
+  ];
+  export type OutputTuple = [owner: string, approved: string, tokenId: bigint];
+  export interface OutputObject {
+    owner: string;
+    approved: string;
+    tokenId: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace ApprovalForAllEvent {
+  export type InputTuple = [
+    owner: AddressLike,
+    operator: AddressLike,
+    approved: boolean
   ];
   export type OutputTuple = [
-    user: string,
-    nftContract: string,
-    tokenId: bigint,
-    totalFeePaid: bigint,
-    lzFee: bigint
+    owner: string,
+    operator: string,
+    approved: boolean
   ];
   export interface OutputObject {
-    user: string;
-    nftContract: string;
-    tokenId: bigint;
-    totalFeePaid: bigint;
-    lzFee: bigint;
+    owner: string;
+    operator: string;
+    approved: boolean;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
   export type Filter = TypedDeferredTopicFilter<Event>;
@@ -215,11 +292,29 @@ export namespace PeerSetEvent {
   export type LogDescription = TypedLogDescription<Event>;
 }
 
-export interface SpokeBridgeL1 extends BaseContract {
-  connect(runner?: ContractRunner | null): SpokeBridgeL1;
+export namespace TransferEvent {
+  export type InputTuple = [
+    from: AddressLike,
+    to: AddressLike,
+    tokenId: BigNumberish
+  ];
+  export type OutputTuple = [from: string, to: string, tokenId: bigint];
+  export interface OutputObject {
+    from: string;
+    to: string;
+    tokenId: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export interface RobinhoodWrappedNFT extends BaseContract {
+  connect(runner?: ContractRunner | null): RobinhoodWrappedNFT;
   waitForDeployment(): Promise<this>;
 
-  interface: SpokeBridgeL1Interface;
+  interface: RobinhoodWrappedNFTInterface;
 
   queryFilter<TCEvent extends TypedContractEvent>(
     event: TCEvent,
@@ -264,15 +359,23 @@ export interface SpokeBridgeL1 extends BaseContract {
     "view"
   >;
 
-  bridgeNFT: TypedContractMethod<
-    [nftContract: AddressLike, tokenId: BigNumberish],
+  approve: TypedContractMethod<
+    [to: AddressLike, tokenId: BigNumberish],
     [void],
-    "payable"
+    "nonpayable"
   >;
 
-  destinationEid: TypedContractMethod<[], [bigint], "view">;
+  balanceOf: TypedContractMethod<[owner: AddressLike], [bigint], "view">;
 
   endpoint: TypedContractMethod<[], [string], "view">;
+
+  getApproved: TypedContractMethod<[tokenId: BigNumberish], [string], "view">;
+
+  isApprovedForAll: TypedContractMethod<
+    [owner: AddressLike, operator: AddressLike],
+    [boolean],
+    "view"
+  >;
 
   isComposeMsgSender: TypedContractMethod<
     [arg0: OriginStruct, arg1: BytesLike, _sender: AddressLike],
@@ -292,6 +395,8 @@ export interface SpokeBridgeL1 extends BaseContract {
     "payable"
   >;
 
+  name: TypedContractMethod<[], [string], "view">;
+
   nextNonce: TypedContractMethod<
     [arg0: BigNumberish, arg1: BytesLike],
     [bigint],
@@ -306,11 +411,34 @@ export interface SpokeBridgeL1 extends BaseContract {
 
   owner: TypedContractMethod<[], [string], "view">;
 
+  ownerOf: TypedContractMethod<[tokenId: BigNumberish], [string], "view">;
+
   peers: TypedContractMethod<[eid: BigNumberish], [string], "view">;
 
   renounceOwnership: TypedContractMethod<[], [void], "nonpayable">;
 
-  serviceFee: TypedContractMethod<[], [bigint], "view">;
+  "safeTransferFrom(address,address,uint256)": TypedContractMethod<
+    [from: AddressLike, to: AddressLike, tokenId: BigNumberish],
+    [void],
+    "nonpayable"
+  >;
+
+  "safeTransferFrom(address,address,uint256,bytes)": TypedContractMethod<
+    [
+      from: AddressLike,
+      to: AddressLike,
+      tokenId: BigNumberish,
+      data: BytesLike
+    ],
+    [void],
+    "nonpayable"
+  >;
+
+  setApprovalForAll: TypedContractMethod<
+    [operator: AddressLike, approved: boolean],
+    [void],
+    "nonpayable"
+  >;
 
   setDelegate: TypedContractMethod<
     [_delegate: AddressLike],
@@ -318,14 +446,24 @@ export interface SpokeBridgeL1 extends BaseContract {
     "nonpayable"
   >;
 
-  setDestinationEid: TypedContractMethod<
-    [_eid: BigNumberish],
+  setPeer: TypedContractMethod<
+    [_eid: BigNumberish, _peer: BytesLike],
     [void],
     "nonpayable"
   >;
 
-  setPeer: TypedContractMethod<
-    [_eid: BigNumberish, _peer: BytesLike],
+  supportsInterface: TypedContractMethod<
+    [interfaceId: BytesLike],
+    [boolean],
+    "view"
+  >;
+
+  symbol: TypedContractMethod<[], [string], "view">;
+
+  tokenURI: TypedContractMethod<[tokenId: BigNumberish], [string], "view">;
+
+  transferFrom: TypedContractMethod<
+    [from: AddressLike, to: AddressLike, tokenId: BigNumberish],
     [void],
     "nonpayable"
   >;
@@ -344,18 +482,28 @@ export interface SpokeBridgeL1 extends BaseContract {
     nameOrSignature: "allowInitializePath"
   ): TypedContractMethod<[origin: OriginStruct], [boolean], "view">;
   getFunction(
-    nameOrSignature: "bridgeNFT"
+    nameOrSignature: "approve"
   ): TypedContractMethod<
-    [nftContract: AddressLike, tokenId: BigNumberish],
+    [to: AddressLike, tokenId: BigNumberish],
     [void],
-    "payable"
+    "nonpayable"
   >;
   getFunction(
-    nameOrSignature: "destinationEid"
-  ): TypedContractMethod<[], [bigint], "view">;
+    nameOrSignature: "balanceOf"
+  ): TypedContractMethod<[owner: AddressLike], [bigint], "view">;
   getFunction(
     nameOrSignature: "endpoint"
   ): TypedContractMethod<[], [string], "view">;
+  getFunction(
+    nameOrSignature: "getApproved"
+  ): TypedContractMethod<[tokenId: BigNumberish], [string], "view">;
+  getFunction(
+    nameOrSignature: "isApprovedForAll"
+  ): TypedContractMethod<
+    [owner: AddressLike, operator: AddressLike],
+    [boolean],
+    "view"
+  >;
   getFunction(
     nameOrSignature: "isComposeMsgSender"
   ): TypedContractMethod<
@@ -377,6 +525,9 @@ export interface SpokeBridgeL1 extends BaseContract {
     "payable"
   >;
   getFunction(
+    nameOrSignature: "name"
+  ): TypedContractMethod<[], [string], "view">;
+  getFunction(
     nameOrSignature: "nextNonce"
   ): TypedContractMethod<
     [arg0: BigNumberish, arg1: BytesLike],
@@ -394,20 +545,43 @@ export interface SpokeBridgeL1 extends BaseContract {
     nameOrSignature: "owner"
   ): TypedContractMethod<[], [string], "view">;
   getFunction(
+    nameOrSignature: "ownerOf"
+  ): TypedContractMethod<[tokenId: BigNumberish], [string], "view">;
+  getFunction(
     nameOrSignature: "peers"
   ): TypedContractMethod<[eid: BigNumberish], [string], "view">;
   getFunction(
     nameOrSignature: "renounceOwnership"
   ): TypedContractMethod<[], [void], "nonpayable">;
   getFunction(
-    nameOrSignature: "serviceFee"
-  ): TypedContractMethod<[], [bigint], "view">;
+    nameOrSignature: "safeTransferFrom(address,address,uint256)"
+  ): TypedContractMethod<
+    [from: AddressLike, to: AddressLike, tokenId: BigNumberish],
+    [void],
+    "nonpayable"
+  >;
+  getFunction(
+    nameOrSignature: "safeTransferFrom(address,address,uint256,bytes)"
+  ): TypedContractMethod<
+    [
+      from: AddressLike,
+      to: AddressLike,
+      tokenId: BigNumberish,
+      data: BytesLike
+    ],
+    [void],
+    "nonpayable"
+  >;
+  getFunction(
+    nameOrSignature: "setApprovalForAll"
+  ): TypedContractMethod<
+    [operator: AddressLike, approved: boolean],
+    [void],
+    "nonpayable"
+  >;
   getFunction(
     nameOrSignature: "setDelegate"
   ): TypedContractMethod<[_delegate: AddressLike], [void], "nonpayable">;
-  getFunction(
-    nameOrSignature: "setDestinationEid"
-  ): TypedContractMethod<[_eid: BigNumberish], [void], "nonpayable">;
   getFunction(
     nameOrSignature: "setPeer"
   ): TypedContractMethod<
@@ -416,15 +590,38 @@ export interface SpokeBridgeL1 extends BaseContract {
     "nonpayable"
   >;
   getFunction(
+    nameOrSignature: "supportsInterface"
+  ): TypedContractMethod<[interfaceId: BytesLike], [boolean], "view">;
+  getFunction(
+    nameOrSignature: "symbol"
+  ): TypedContractMethod<[], [string], "view">;
+  getFunction(
+    nameOrSignature: "tokenURI"
+  ): TypedContractMethod<[tokenId: BigNumberish], [string], "view">;
+  getFunction(
+    nameOrSignature: "transferFrom"
+  ): TypedContractMethod<
+    [from: AddressLike, to: AddressLike, tokenId: BigNumberish],
+    [void],
+    "nonpayable"
+  >;
+  getFunction(
     nameOrSignature: "transferOwnership"
   ): TypedContractMethod<[newOwner: AddressLike], [void], "nonpayable">;
 
   getEvent(
-    key: "BridgeInitiated"
+    key: "Approval"
   ): TypedContractEvent<
-    BridgeInitiatedEvent.InputTuple,
-    BridgeInitiatedEvent.OutputTuple,
-    BridgeInitiatedEvent.OutputObject
+    ApprovalEvent.InputTuple,
+    ApprovalEvent.OutputTuple,
+    ApprovalEvent.OutputObject
+  >;
+  getEvent(
+    key: "ApprovalForAll"
+  ): TypedContractEvent<
+    ApprovalForAllEvent.InputTuple,
+    ApprovalForAllEvent.OutputTuple,
+    ApprovalForAllEvent.OutputObject
   >;
   getEvent(
     key: "OwnershipTransferred"
@@ -440,17 +637,35 @@ export interface SpokeBridgeL1 extends BaseContract {
     PeerSetEvent.OutputTuple,
     PeerSetEvent.OutputObject
   >;
+  getEvent(
+    key: "Transfer"
+  ): TypedContractEvent<
+    TransferEvent.InputTuple,
+    TransferEvent.OutputTuple,
+    TransferEvent.OutputObject
+  >;
 
   filters: {
-    "BridgeInitiated(address,address,uint256,uint256,uint256)": TypedContractEvent<
-      BridgeInitiatedEvent.InputTuple,
-      BridgeInitiatedEvent.OutputTuple,
-      BridgeInitiatedEvent.OutputObject
+    "Approval(address,address,uint256)": TypedContractEvent<
+      ApprovalEvent.InputTuple,
+      ApprovalEvent.OutputTuple,
+      ApprovalEvent.OutputObject
     >;
-    BridgeInitiated: TypedContractEvent<
-      BridgeInitiatedEvent.InputTuple,
-      BridgeInitiatedEvent.OutputTuple,
-      BridgeInitiatedEvent.OutputObject
+    Approval: TypedContractEvent<
+      ApprovalEvent.InputTuple,
+      ApprovalEvent.OutputTuple,
+      ApprovalEvent.OutputObject
+    >;
+
+    "ApprovalForAll(address,address,bool)": TypedContractEvent<
+      ApprovalForAllEvent.InputTuple,
+      ApprovalForAllEvent.OutputTuple,
+      ApprovalForAllEvent.OutputObject
+    >;
+    ApprovalForAll: TypedContractEvent<
+      ApprovalForAllEvent.InputTuple,
+      ApprovalForAllEvent.OutputTuple,
+      ApprovalForAllEvent.OutputObject
     >;
 
     "OwnershipTransferred(address,address)": TypedContractEvent<
@@ -473,6 +688,17 @@ export interface SpokeBridgeL1 extends BaseContract {
       PeerSetEvent.InputTuple,
       PeerSetEvent.OutputTuple,
       PeerSetEvent.OutputObject
+    >;
+
+    "Transfer(address,address,uint256)": TypedContractEvent<
+      TransferEvent.InputTuple,
+      TransferEvent.OutputTuple,
+      TransferEvent.OutputObject
+    >;
+    Transfer: TypedContractEvent<
+      TransferEvent.InputTuple,
+      TransferEvent.OutputTuple,
+      TransferEvent.OutputObject
     >;
   };
 }

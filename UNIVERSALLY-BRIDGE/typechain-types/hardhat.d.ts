@@ -142,37 +142,17 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.Strings__factory>;
     getContractFactory(
-      name: "HubBridge",
+      name: "OmnichainNFTBridge",
       signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.HubBridge__factory>;
+    ): Promise<Contracts.OmnichainNFTBridge__factory>;
     getContractFactory(
-      name: "IMintableERC721",
+      name: "RobinhoodWrappedNFT",
       signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.IMintableERC721__factory>;
-    getContractFactory(
-      name: "HubBridgeL1",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.HubBridgeL1__factory>;
-    getContractFactory(
-      name: "IInbox",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.IInbox__factory>;
-    getContractFactory(
-      name: "MockInbox",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.MockInbox__factory>;
-    getContractFactory(
-      name: "SpokeBridgeL1",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.SpokeBridgeL1__factory>;
+    ): Promise<Contracts.RobinhoodWrappedNFT__factory>;
     getContractFactory(
       name: "TestNFT",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.TestNFT__factory>;
-    getContractFactory(
-      name: "WrappedNFT",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.WrappedNFT__factory>;
 
     getContractAt(
       name: "DVNOptions",
@@ -335,45 +315,20 @@ declare module "hardhat/types/runtime" {
       signer?: ethers.Signer
     ): Promise<Contracts.Strings>;
     getContractAt(
-      name: "HubBridge",
+      name: "OmnichainNFTBridge",
       address: string | ethers.Addressable,
       signer?: ethers.Signer
-    ): Promise<Contracts.HubBridge>;
+    ): Promise<Contracts.OmnichainNFTBridge>;
     getContractAt(
-      name: "IMintableERC721",
+      name: "RobinhoodWrappedNFT",
       address: string | ethers.Addressable,
       signer?: ethers.Signer
-    ): Promise<Contracts.IMintableERC721>;
-    getContractAt(
-      name: "HubBridgeL1",
-      address: string | ethers.Addressable,
-      signer?: ethers.Signer
-    ): Promise<Contracts.HubBridgeL1>;
-    getContractAt(
-      name: "IInbox",
-      address: string | ethers.Addressable,
-      signer?: ethers.Signer
-    ): Promise<Contracts.IInbox>;
-    getContractAt(
-      name: "MockInbox",
-      address: string | ethers.Addressable,
-      signer?: ethers.Signer
-    ): Promise<Contracts.MockInbox>;
-    getContractAt(
-      name: "SpokeBridgeL1",
-      address: string | ethers.Addressable,
-      signer?: ethers.Signer
-    ): Promise<Contracts.SpokeBridgeL1>;
+    ): Promise<Contracts.RobinhoodWrappedNFT>;
     getContractAt(
       name: "TestNFT",
       address: string | ethers.Addressable,
       signer?: ethers.Signer
     ): Promise<Contracts.TestNFT>;
-    getContractAt(
-      name: "WrappedNFT",
-      address: string | ethers.Addressable,
-      signer?: ethers.Signer
-    ): Promise<Contracts.WrappedNFT>;
 
     deployContract(
       name: "DVNOptions",
@@ -504,37 +459,17 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.Strings>;
     deployContract(
-      name: "HubBridge",
+      name: "OmnichainNFTBridge",
       signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.HubBridge>;
+    ): Promise<Contracts.OmnichainNFTBridge>;
     deployContract(
-      name: "IMintableERC721",
+      name: "RobinhoodWrappedNFT",
       signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.IMintableERC721>;
-    deployContract(
-      name: "HubBridgeL1",
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.HubBridgeL1>;
-    deployContract(
-      name: "IInbox",
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.IInbox>;
-    deployContract(
-      name: "MockInbox",
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.MockInbox>;
-    deployContract(
-      name: "SpokeBridgeL1",
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.SpokeBridgeL1>;
+    ): Promise<Contracts.RobinhoodWrappedNFT>;
     deployContract(
       name: "TestNFT",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.TestNFT>;
-    deployContract(
-      name: "WrappedNFT",
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.WrappedNFT>;
 
     deployContract(
       name: "DVNOptions",
@@ -697,45 +632,20 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.Strings>;
     deployContract(
-      name: "HubBridge",
+      name: "OmnichainNFTBridge",
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.HubBridge>;
+    ): Promise<Contracts.OmnichainNFTBridge>;
     deployContract(
-      name: "IMintableERC721",
+      name: "RobinhoodWrappedNFT",
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.IMintableERC721>;
-    deployContract(
-      name: "HubBridgeL1",
-      args: any[],
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.HubBridgeL1>;
-    deployContract(
-      name: "IInbox",
-      args: any[],
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.IInbox>;
-    deployContract(
-      name: "MockInbox",
-      args: any[],
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.MockInbox>;
-    deployContract(
-      name: "SpokeBridgeL1",
-      args: any[],
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.SpokeBridgeL1>;
+    ): Promise<Contracts.RobinhoodWrappedNFT>;
     deployContract(
       name: "TestNFT",
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.TestNFT>;
-    deployContract(
-      name: "WrappedNFT",
-      args: any[],
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.WrappedNFT>;
 
     // default types
     getContractFactory(
